@@ -22,15 +22,20 @@ FAIL = [
     (r"PhotonView|PhotonNetwork|LoadBalancing|RaiseEvent|OpRaiseEvent|\bRPC\b|RpcTarget"
      r"|SendAllOutgoing|RunViewUpdate|NetworkMessenger|SendExecute|\bRpc[A-Z]\w*", "network / RPC sending"),
     (r"MasterClient|SetMasterClient", "taking master client"),
-    (r"Kick|\bBan\b|SetBan|IsBanned|GetIsBanned|GameBanned|Vote|Moderat|ReportPlayer|Mute(?:Player|Ban)",
-     "kicks, bans, votes or moderation"),
+    (r"(?i)\bkick|\bban(?:ned|s)?\b|setban|isbanned|gamebanned|permaban|unban|\bvote|moderat|reportplayer"
+     r"|mute(?:player|ban)", "kicks, bans, votes or moderation"),
     (r"GameManager", "GameManager (creative mode / room control)"),
     (r"Purchase|Redeem|Currency|Butt ?[Cc]oin|CashOut|Stash|UnlockAll|IsPatternOwned|ownedPatterns",
      "economy / unlocking items"),
     # Identity and accounts
-    (r"Spoof|DeviceId|deviceUniqueIdentifier|AccessToken|access_?[Kk]ey|secret_?[Kk]ey|e_accessKey|e_secretKey"
-     r"|password|Oculus\.Platform|oculusID|metaID|UserProof|Entitlement|AccountManager|accountData|deviceKey",
-     "account, identity or credentials"),
+    (r"(?i)spoof|device_?id|deviceUniqueIdentifier|access_?token|access_?key|secret_?key|password"
+     r"|Oculus\.Platform|oculus_?id|meta_?id|UserProof|Entitlement|AccountManager|account_?data|device_?key"
+     r"|AuthValues|\buser_?id\b|PlayerPrefs", "account, identity or credentials"),
+    # Device spoofers and ban evasion
+    (r"(?i)hwid|SystemInfo|device(?:Name|Model)|android_?id|Settings\$Secure|Secure\.getString"
+     r"|__system_property|getprop|ro\.serialno|ro\.boot\.|Build\.SERIAL|\bserial_?(?:no|number)?\b"
+     r"|mac_?addr|wlan0|evad(?:e|ing|ion)|ban_?bypass|alt_?account|new_?account|fresh_?account",
+     "device spoofing or ban evasion"),
     # Outside network and running other code
     (r"\bsocket\s*\(|\bconnect\s*\(|getaddrinfo|gethostbyname|\bcurl|libcurl|UnityWebRequest|WebClient"
      r"|HttpClient|https?://", "network access / URLs"),

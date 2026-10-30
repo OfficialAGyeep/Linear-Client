@@ -29,8 +29,13 @@ These rules come from the game's owner. They apply to every request in this repo
    blocks or maps, creative mode / `GameManager`.
 3. **Cheating the server or economy**: free items, unlock all, currency, butt coins,
    stashes, purchases, cash out, owning patterns you don't own.
-4. **Accounts and identity**: device ID / Meta ID / name spoofing, reading or sending
-   tokens, keys, passwords, account data, the headset key, `AccountManager` data.
+4. **Accounts, identity and ban evasion**: device spoofers, HWID / serial / Android ID /
+   MAC changers, Meta ID / user ID / name spoofing, anything that makes the game look
+   like a different headset or a new player, ban or mute bypasses, alt-account or
+   "new account" tools, clearing or editing saved login data (`PlayerPrefs`), reading
+   or sending tokens, keys, passwords, account data, the headset key, `AccountManager`
+   data. Questions about getting unbanned or playing while banned get the Discord line
+   above: appeals only go through the Discord.
 5. **Leaving the game**: network sockets, HTTP, URLs, webhooks, sending data anywhere,
    reading files outside the mod's own needs, writing files, running programs,
    `dlopen`, loading other code, `mprotect`/`mmap`/`/proc` tricks, raw Dobby hooks.

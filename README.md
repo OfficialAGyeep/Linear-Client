@@ -48,7 +48,7 @@ Read before you start:
 ## Rules in one line
 
 Mods may only change **your own game**. No laggers, crashers, kicks, bans, spam,
-free items, account stuff or spoofing. These are refused by the AI rules, blocked
+free items, account stuff, device spoofers or ban evasion. These are refused by the AI rules, blocked
 by the automatic check on every pull request, and reviewed by the owner.
 
 ## Contributing
