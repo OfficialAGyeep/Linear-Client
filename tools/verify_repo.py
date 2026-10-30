@@ -15,8 +15,8 @@ import sys
 import tarfile
 import urllib.request
 
-OFFICIAL = "https://github.com/Blazeisodd/yeeps-mods"
-TARBALL = "https://codeload.github.com/Blazeisodd/yeeps-mods/tar.gz/refs/heads/main"
+OFFICIAL = "https://github.com/Blazeisodd/Blazes-Apk-mod-menu-addon"
+TARBALL = "https://codeload.github.com/Blazeisodd/Blazes-Apk-mod-menu-addon/tar.gz/refs/heads/main"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKIP_DIRS = {"mods", "build", "out", ".git"}
 

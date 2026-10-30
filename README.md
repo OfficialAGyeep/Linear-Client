@@ -1,4 +1,4 @@
-# Yeeps Mods
+# Blazes Apk mod menu addon
 
 Community mods for **Yeeps (blaze build)**. The game ships only BNM (ByNameModding)
 and a small mod loader; everything else is made by players, here.
@@ -43,18 +43,12 @@ AI assistants: open this folder in Codex or Claude Code. They read `AGENTS.md`
 **Check your copy isn't edited** before you use it (the AI does this first too):
 `python3 tools/verify_repo.py` compares everything outside `mods/` with this repo on
 GitHub. If it says `EDITED`, download a fresh copy from
-https://github.com/Blazeisodd/yeeps-mods.
+https://github.com/Blazeisodd/Blazes-Apk-mod-menu-addon.
 
 Read before you start:
 - [AGENTS.md](AGENTS.md): what is and isn't allowed
 - [docs/GUIDE.md](docs/GUIDE.md): how to avoid lag and crashes
 - [docs/API.md](docs/API.md): the mod API
-
-## Rules in one line
-
-Mods may only change **your own game**. No laggers, crashers, kicks, bans, spam,
-free items, account stuff, device spoofers or ban evasion. These are refused by the AI rules, blocked
-by the automatic check on every pull request, and reviewed by the owner.
 
 ## Contributing
 
