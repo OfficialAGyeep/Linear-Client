@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""Safety check for mods. Runs in build.sh/build.bat and on every pull request.
+
+It FAILS on code that can hurt other players, the server or someone's account:
+network/RPC sending, kicks/bans/votes, economy, identity/credentials, outside
+network access, running other code, memory tricks, and obfuscation. It WARNS on
+things that often cause lag. The rules live in AGENTS.md ("Never add").
+
+This is a tripwire, not a full review: a human maintainer still reviews every PR.
+Usage: python3 tools/check_mod.py [paths...]   (default: mods/)
+"""
+import pathlib
+import re
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+SOURCE_EXT = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".inl", ".txt", ".cmake"}
+BINARY_EXT = {".so", ".a", ".o", ".apk", ".dex", ".jar", ".bin", ".exe", ".dll", ".zip", ".rar", ".7z"}
+
+FAIL = [
+    # Sending things to other players / the room (laggers, crashers, grief)
+    (r"PhotonView|PhotonNetwork|LoadBalancing|RaiseEvent|OpRaiseEvent|\bRPC\b|RpcTarget"
+     r"|SendAllOutgoing|RunViewUpdate|NetworkMessenger|SendExecute|\bRpc[A-Z]\w*", "network / RPC sending"),
+    (r"MasterClient|SetMasterClient", "taking master client"),
+    (r"Kick|\bBan\b|SetBan|IsBanned|GetIsBanned|GameBanned|Vote|Moderat|ReportPlayer|Mute(?:Player|Ban)",
+     "kicks, bans, votes or moderation"),
+    (r"GameManager", "GameManager (creative mode / room control)"),
+    (r"Purchase|Redeem|Currency|Butt ?[Cc]oin|CashOut|Stash|UnlockAll|IsPatternOwned|ownedPatterns",
+     "economy / unlocking items"),
+    # Identity and accounts
+    (r"Spoof|DeviceId|deviceUniqueIdentifier|AccessToken|access_?[Kk]ey|secret_?[Kk]ey|e_accessKey|e_secretKey"
+     r"|password|Oculus\.Platform|oculusID|metaID|UserProof|Entitlement|AccountManager|accountData|deviceKey",
+     "account, identity or credentials"),
+    # Outside network and running other code
+    (r"\bsocket\s*\(|\bconnect\s*\(|getaddrinfo|gethostbyname|\bcurl|libcurl|UnityWebRequest|WebClient"
+     r"|HttpClient|https?://", "network access / URLs"),
+    (r"\bsystem\s*\(|\bpopen\s*\(|\bexec[lv]p?e?\s*\(|\bfork\s*\(|dlopen|dlsym|android_dlopen",
+     "running other programs or loading other code"),
+    (r"mprotect|mmap|/proc/|ptrace|process_vm_|DobbyHook|__builtin___clear_cache", "raw memory / process tricks"),
+    (r"\bfopen\s*\([^)]*\"[wa]|ofstream|\bopen\s*\([^)]*O_(?:WRONLY|RDWR|CREAT)", "writing files"),
+    (r"base64|\\x[0-9a-fA-F]{2}(?:\\x[0-9a-fA-F]{2}){7,}|\bxor\b|obfuscat", "obfuscated code"),
+]
+WARN = [
+    (r"FindObjectsOfType|FindObjectOfType|FindAnyObjectByType|FindObjectsByType|Resources\.FindObjectsOfTypeAll"
+     r"|GameObject\.Find\b", "scene search: never call it every frame, cache the result"),
+    (r"while\s*\(\s*(?:true|1)\s*\)|for\s*\(\s*;\s*;\s*\)", "endless loop"),
+    (r"std::thread|pthread_create|std::async", "threads: Unity may only be used on the main thread"),
+    (r"\bsleep\s*\(|usleep|nanosleep|sleep_for", "sleeping blocks the game's frame"),
+    (r"CreatePrimitive|Instantiate", "creating objects: never every frame, keep a hard limit"),
+]
+
+
+def scan(paths):
+    failed = warned = 0
+    for base in paths:
+        files = [base] if base.is_file() else [p for p in base.rglob("*") if p.is_file()]
+        for f in files:
+            rel = f.relative_to(ROOT) if f.is_relative_to(ROOT) else f
+            if f.suffix.lower() in BINARY_EXT:
+                print(f"FAIL {rel}: binary file in a mod folder (only source code is accepted)")
+                failed += 1
+                continue
+            if f.suffix.lower() not in SOURCE_EXT and f.name != "CMakeLists.txt":
+                continue
+            for n, line in enumerate(f.read_text(errors="replace").splitlines(), 1):
+                for pat, why in FAIL:
+                    if re.search(pat, line):
+                        print(f"FAIL {rel}:{n}: {why}\n     {line.strip()[:160]}")
+                        failed += 1
+                for pat, why in WARN:
+                    if re.search(pat, line):
+                        print(f"warn {rel}:{n}: {why}")
+                        warned += 1
+    return failed, warned
+
+
+def main():
+    args = [pathlib.Path(a).resolve() for a in sys.argv[1:]] or [ROOT / "mods"]
+    failed, warned = scan(args)
+    print(f"\ncheck_mod: {failed} problem(s), {warned} warning(s)")
+    if failed:
+        print("Not allowed in this repo. See AGENTS.md -> 'Never add'. Questions: https://discord.gg/UfYxE9W9dX")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
