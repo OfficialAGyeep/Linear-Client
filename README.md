@@ -38,7 +38,12 @@ Everything in it is local: nothing is sent to other players.
    Your mod is in `out/<your-mod>.so`.
 
 AI assistants: open this folder in Codex or Claude Code. They read `AGENTS.md`
-(Claude also reads `CLAUDE.md`), which holds the rules.
+(Claude also reads `CLAUDE.md`), which holds the rules and a full how-to.
+
+**Check your copy isn't edited** before you use it (the AI does this first too):
+`python3 tools/verify_repo.py` compares everything outside `mods/` with this repo on
+GitHub. If it says `EDITED`, download a fresh copy from
+https://github.com/Blazeisodd/yeeps-mods.
 
 Read before you start:
 - [AGENTS.md](AGENTS.md): what is and isn't allowed

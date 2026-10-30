@@ -15,6 +15,9 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCE_EXT = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".inl", ".txt", ".cmake"}
+AI_NAMES = {"agents.md", "agents.override.md", "claude.md", "claude.local.md", "gemini.md",
+            ".cursorrules", ".windsurfrules", "copilot-instructions.md", ".clinerules"}
+AI_DIRS = {".claude", ".codex", ".cursor", ".gemini", ".windsurf", ".clinerules"}
 BINARY_EXT = {".so", ".a", ".o", ".apk", ".dex", ".jar", ".bin", ".exe", ".dll", ".zip", ".rar", ".7z"}
 
 FAIL = [
@@ -61,6 +64,11 @@ def scan(paths):
         files = [base] if base.is_file() else [p for p in base.rglob("*") if p.is_file()]
         for f in files:
             rel = f.relative_to(ROOT) if f.is_relative_to(ROOT) else f
+            low = [x.lower() for x in rel.parts]
+            if (low[-1] in AI_NAMES or low[-1].endswith(".mdc") or any(d in AI_DIRS for d in low[:-1])):
+                print(f"FAIL {rel}: AI instruction file in a mod folder (only the owner's AGENTS.md/CLAUDE.md count)")
+                failed += 1
+                continue
             if f.suffix.lower() in BINARY_EXT:
                 print(f"FAIL {rel}: binary file in a mod folder (only source code is accepted)")
                 failed += 1
