@@ -22,8 +22,9 @@ BINARY_EXT = {".so", ".a", ".o", ".apk", ".dex", ".jar", ".bin", ".exe", ".dll",
 
 FAIL = [
     # Sending things to other players / the room (laggers, crashers, grief)
-    (r"PhotonView|PhotonNetwork|LoadBalancing|RaiseEvent|OpRaiseEvent|\bRPC\b|RpcTarget"
-     r"|SendAllOutgoing|RunViewUpdate|NetworkMessenger|SendExecute|\bRpc[A-Z]\w*", "network / RPC sending"),
+    # PhotonView.RPC is allowed only for the RPC names on NET_ALLOWED (checked below)
+    (r"PhotonNetwork|LoadBalancing|RaiseEvent|OpRaiseEvent|RpcTarget\.|SendAllOutgoing|RunViewUpdate"
+     r"|SendExecute|DestroyAll|LeaveRoom|SetMasterClient", "network / RPC sending"),
     (r"MasterClient|SetMasterClient", "taking master client"),
     (r"(?i)\bkick|\bban(?:ned|s)?\b|setban|isbanned|gamebanned|permaban|unban|\bvote|moderat|reportplayer"
      r"|mute(?:player|ban)", "kicks, bans, votes or moderation"),
@@ -48,6 +49,19 @@ FAIL = [
     (r"\bfopen\s*\([^)]*\"[wa]|ofstream|\bopen\s*\([^)]*O_(?:WRONLY|RDWR|CREAT)", "writing files"),
     (r"base64|\\x[0-9a-fA-F]{2}(?:\\x[0-9a-fA-F]{2}){7,}|\bxor\b|obfuscat", "obfuscated code"),
 ]
+# The owner allows a few of the game's own network messages (2026-10-31: "RPC for
+# everyone, just nothing destructive like spamming"): effect senders and item spawning.
+# Only these may be named in a mod, and the mod must rate-limit them (AGENTS.md).
+# Any other Send*/Rpc* name FAILS.
+NET_ALLOWED = {
+    "SendCreateConfettiEffect", "SendCreateHitEffect", "SendPlaySoundEffect",
+    "SendPlaySingletonSoundEffect", "SendCreateLoseStuffingEffect", "SendCreateCakeSplatEffect",
+    "SendCreateYeepingAngelTeleporterEffect", "SendCreatePaintballSplashEffect",
+    "SendHapticImpulse",   # UnityEngine.XR controller buzz, local only
+    "RpcCreateItem",       # spawning items, with a cooldown and a per-frame cap
+}
+NET_NAME = re.compile(r'"((?:Send|Rpc)[A-Z]\w*)"')
+
 WARN = [
     (r"FindObjectsOfType|FindObjectOfType|FindAnyObjectByType|FindObjectsByType|Resources\.FindObjectsOfTypeAll"
      r"|GameObject\.Find\b", "scene search: never call it every frame, cache the result"),
@@ -79,6 +93,10 @@ def scan(paths):
                 for pat, why in FAIL:
                     if re.search(pat, line):
                         print(f"FAIL {rel}:{n}: {why}\n     {line.strip()[:160]}")
+                        failed += 1
+                for name in NET_NAME.findall(line):
+                    if name not in NET_ALLOWED:
+                        print(f"FAIL {rel}:{n}: network sender '{name}' is not on the allowed list\n     {line.strip()[:160]}")
                         failed += 1
                 for pat, why in WARN:
                     if re.search(pat, line):

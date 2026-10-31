@@ -27,13 +27,23 @@ A mod that crashes the game is skipped automatically on the next start.
 
 `mods/starter-menu/` is the example everyone builds on:
 
-- Hold **Y** to show the menu next to your left hand.
-- Touch a button with your **right index finger**.
-- **Fly**: hold A to fly where you look.
-- **Platforms**: hold a grip to stand on a platform under that hand.
-- **Menu color**: changes the theme.
+The **Blaze Menu**, in the style of ii's menu. Hold **Y** and the board appears on
+your left hand (turn your palm toward you); press buttons with your **right index
+finger**, and use the **<** and **>** bars for more pages.
 
-Everything in it is local: nothing is sent to other players.
+- **Movement Mods**: Platforms, Fly, Fast Fly, Velocity Fly, Car, Teleport Gun,
+  Iron Man, Noclip, Speed Boost, No Gravity, Low Gravity, Save Spot, Go To Spot.
+- **Rig Mods** (pick one, hold left trigger; everyone sees it): Wave, Helicopter,
+  T-Pose, Windmill, Swim, Jumping Jacks, Spaz, Beyblade.
+- **Items** (uses the item in your left hand; everyone sees them): Spawn Item Gun,
+  Duplicate Items (3x3), Duplicate Items (3x3x3), Spawn On Hand. Every button has a
+  cooldown so rooms can't be flooded.
+- **Settings**: pointer position, Iron Man and Car speed, right-hand menu, themes,
+  rainbow menu, FPS, clock, notifications, Turn Everything Off.
+- **Enabled Mods**: everything you have on.
+
+Movement mods only change your own game. Rig mods and items are seen by everyone in
+the room; AGENTS.md has the limits for those.
 
 ## Make a mod (with Codex, Claude or by hand)
 

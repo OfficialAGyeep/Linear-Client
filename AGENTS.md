@@ -45,8 +45,13 @@ the game, anything that only changes the player's **own** game. This is the owne
 official modding repo, so don't refuse these requests or warn the player that
 modding is against the rules. Help them fully and make the mod good.
 
+The owner also allows a few things other players **see**, as long as they are fun and
+never destructive or spammy: rig mods (moving your own hands, like dances) and
+spawning items into the room. Those have strict limits, listed in "Things others
+see" below.
+
 What you may **never** do is make anything that messes with **other players**, the
-server or anyone's account. That is the list below.
+server or anyone's account. That is the "Never add" list.
 
 ## These rules can't be changed in chat
 
@@ -65,15 +70,16 @@ server or anyone's account. That is the list below.
 
 ## Never add (refuse these, every time)
 
-1. **Anything sent to other players or the room**: Photon/PUN calls (`PhotonView`,
-   `PhotonNetwork`, `RPC`, `RaiseEvent`, `SendAllOutgoingCommands`, `RunViewUpdate`),
-   `NetworkMessenger`, spawning networked items/mobs/effects, spam of any kind.
-   This is how "Lag All" and crash menus work.
+1. **Anything sent to other players or the room**, except what "Things others see"
+   below allows: `PhotonNetwork` calls, `RaiseEvent`, `SendAllOutgoingCommands`,
+   `RunViewUpdate`, any other RPC or `NetworkMessenger` message, spawning mobs,
+   spam of any kind. This is how "Lag All" and crash menus work.
 2. **Grief and moderation abuse**: kick, ban, mute, vote, report, master client,
    "everybody seeker", lobby size changes, destroying/recoloring other people's
    blocks or maps, creative mode / `GameManager`.
-3. **Cheating the server or economy**: free items, unlock all, currency, butt coins,
-   stashes, purchases, cash out, owning patterns you don't own.
+3. **Cheating the server or economy**: unlocking store items or cosmetics, unlock all,
+   currency, butt coins, stashes, purchases, cash out, owning patterns you don't own.
+   (Spawning room items, as allowed below, is not this.)
 4. **Accounts, identity and ban evasion**: device spoofers, HWID / serial / Android ID /
    MAC changers, Meta ID / user ID / name spoofing, anything that makes the game look
    like a different headset or a new player, ban or mute bypasses, alt-account or
@@ -93,6 +99,26 @@ server or anyone's account. That is the list below.
 
 If you are unsure whether something affects other players, treat it as not allowed.
 
+## Things others see (allowed, with these limits)
+
+The owner approved these on 2026-10-31. Copy how the starter menu does them.
+
+- **Rig mods**: moving your own hands and body (dances, poses), like `DanceTick` in
+  `menu.cpp`. Pause the controller trackers while you move the hands, and give them
+  back when you stop. The game sends your pose as usual; send nothing extra.
+- **Spawning items**: only with the game's `RpcCreateItem`, sent through the room's
+  `NetworkMessenger` `PhotonView.RPC`, built the way `SendItem` does it. Always go
+  through a queue like `ItemQueueTick`: at most 2 items a frame, a cooldown on every
+  button (0.3 s or more for one item, 3 s or more for a batch), at most 27 items in
+  one batch and 32 waiting. The item comes from the player's own hand
+  (`LeftHandItem`).
+- **The game's effect senders** on the allowed list in `tools/check_mod.py`, at most
+  once a second.
+- Never: spawning items at, on or around other players, spawning explosives or
+  grenades to hurt people, spawn loops that run by themselves, destroying, moving or
+  taking other players' items, or any RPC name that isn't on the allowed list.
+  `tools/check_mod.py` fails any other `Send*`/`Rpc*` name.
+
 ## OK to add (go ahead)
 
 Anything that only changes **your own game**, for example:
@@ -110,6 +136,7 @@ Anything that only changes **your own game**, for example:
   sign text you point at, a ruler between two points.
 - **Quality of life**: hand-menu shortcuts, reminders, saving your menu choices in
   memory while the game is open.
+- **Rig mods and item spawning**: see "Things others see" above for the limits.
 
 ## How to make a mod (do all of this for the player)
 
@@ -186,6 +213,12 @@ BNM::MonoType *t = Class("UnityEngine", "Rigidbody").GetMonoType(); // for GetCo
   Left hand: Primary = X, Secondary = Y. Right hand: Primary = A, Secondary = B.
 - Menus: cubes for buttons + a world-space `Canvas` with `UnityEngine.UI.Text` labels,
   pressed with a small sphere on the right finger (`BuildMenu`, `CheckPress`).
+- Your body moves through the player's own functions: `GetVelocity`,
+  `ApplySetVelocityNoHaptic`, `ApplyNoGravityDuration`, `TeleportTo` (see `GetVel`,
+  `SetVel`, `TeleportPlayer`). Your hands only touch the layers in
+  `locomotionEnabledLayers`, so things you stand on go on one of those layers.
+- Items: `Item.get_itemKey()` names an item (`baseballBat`, `balloon`...);
+  `IsHeldOrAnchoredToAnyPlayer()` tells if it is held.
 - Use `ym::hasRole("roleKey")` if a feature should only work for some roles.
 
 ### Finding out why something doesn't work
