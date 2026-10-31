@@ -192,8 +192,8 @@ BNM::MonoType *t = Class("UnityEngine", "Rigidbody").GetMonoType(); // for GetCo
 
 - `ym::log("...")` lines go to
   `Android/data/com.TrassGames.Yeeps/files/bnm_checkpoint.txt` on the headset, starting
-  with `[mod]` (max 20 lines a second for all mods). The player can copy that file off
-  with SideQuest and paste it to you.
+  with `[mod]` (max 20 lines a second for all mods). The player can open that file with
+  CX File Explorer (or any file explorer, or SideQuest) and paste it to you.
 - The game logs each mod it loads with its file name and hash, and why it skipped
   one (crashed last time, `DISABLE` file, too slow).
 - If a class or method isn't found, `IsValid()` is false: log it once and turn that
@@ -220,7 +220,11 @@ More detail: `docs/GUIDE.md` (lag and crashes) and `docs/API.md` (the API).
 2. Run `python3 tools/check_mod.py` and fix every FAIL. Fix warnings unless there is
    a clear reason (e.g. a one-time lookup).
 3. Build with `./build.sh` (or `build.bat`) and make sure it compiles.
-4. Tell the player how to install: copy `out/<name>.so` with SideQuest into
-   `Android/data/com.TrassGames.Yeeps/files/mods/` on the headset, then restart the game.
-   The newest blaze APK from the Discord is required. To share it with everyone, open
-   a pull request on https://github.com/Blazeisodd/Blazes-Apk-mod-menu-addon (see `CONTRIBUTING.md`).
+4. Tell the player how to install, in these simple words: download the `.so` file,
+   then use CX File Explorer (or any file explorer) to drop it into
+   `Android/data/com.TrassGames.Yeeps/files/mods/` on the headset, and restart Yeeps.
+   The game makes that folder the first time it runs, and the newest blaze APK from
+   the Discord is required. Only if their file explorer can't open `Android/data`,
+   tell them to plug the headset into a PC and drop the file in with SideQuest.
+   To share it with everyone, open a pull request on
+   https://github.com/Blazeisodd/Blazes-Apk-mod-menu-addon (see `CONTRIBUTING.md`).

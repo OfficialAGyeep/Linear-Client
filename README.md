@@ -8,11 +8,16 @@ Only get the game and mods from the Discord or this repo.
 
 ## Install a mod (players)
 
-1. Have the newest blaze APK from the Discord installed.
-2. Get the mod's `.so` file (from this repo's **Actions** build artifacts, or build it yourself).
-3. Connect your headset to SideQuest and copy the `.so` into
+1. Have the newest blaze APK from the Discord installed, and start Yeeps once. The
+   game makes its `mods` folder the first time it runs.
+2. Download the mod's `.so` file on your headset (from the Discord, from this repo's
+   **Actions** build artifacts, or build it yourself).
+3. Open **CX File Explorer** (or any file explorer) and move the `.so` into:
    `Android/data/com.TrassGames.Yeeps/files/mods/`
-4. Restart Yeeps.
+4. Restart Yeeps. The mod loads by itself.
+
+If your file explorer can't open the `Android/data` folder, plug the headset into a
+PC and drop the file into the same folder with SideQuest.
 
 To remove a mod, delete its file. If the game won't start, make an empty file
 named `DISABLE` in that `mods` folder: every mod is skipped until you delete it.
