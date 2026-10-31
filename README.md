@@ -23,6 +23,12 @@ To remove a mod, delete its file. If the game won't start, make an empty file
 named `DISABLE` in that `mods` folder: every mod is skipped until you delete it.
 A mod that crashes the game is skipped automatically on the next start.
 
+## Get the Blaze Menu (no building needed)
+
+Download it on your headset: **https://live.yeeps-tools.org/download/menu**
+(it saves as `Blaze-Menu.so`), then move it into the mods folder as above and
+restart Yeeps. That link always gives the newest version.
+
 ## Starter Menu
 
 `mods/starter-menu/` is the example everyone builds on:
