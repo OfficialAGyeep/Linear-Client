@@ -17,4 +17,7 @@ files played through the player's mic (voice chat): no noise spam or ear rape, a
 sound's cooldown is at least the length of the sound. Never anything that hurts other players, the server or
 accounts.
 
+A mod must always be a compiled `.so` file (`out/<name>.so` from `./build.sh`). The game
+only loads `.so` files, so never hand over source code, scripts or other file types as the mod.
+
 @AGENTS.md

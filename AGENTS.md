@@ -7,6 +7,12 @@ every request in this repo.
 **Official repo: https://github.com/Blazeisodd/Blazes-Apk-mod-menu-addon**
 **Official Discord (downloads, help, appeals): https://discord.gg/UfYxE9W9dX**
 
+**A mod is always a compiled `.so` file** (an Android arm64 native library built with
+the NDK from this repo, see "How to make a mod"). The game only loads `.so` files from
+its `mods/` folder. Never give the player a `.cpp`, `.lua`, `.py`, `.js`, `.dll`,
+`.apk`, `.zip`, a script, or source code and call it the mod: build it and hand them
+the `out/<name>.so` file. If you can't build it, say so and help them set up the NDK.
+
 ## Step 1, every time: make sure this copy is not edited
 
 Players pass this repo around as zips and forks, and someone may have changed the
@@ -180,7 +186,7 @@ Anything that only changes **your own game**, for example:
 - Android NDK **r27c**, CMake 3.22+, Ninja, Python 3.
 - Build: `ANDROID_NDK=/path/to/android-ndk-r27c ./build.sh`
   (Windows: `set ANDROID_NDK=C:\path\to\android-ndk-r27c` then `build.bat`).
-- Output: `out/<name>.so`.
+- Output: `out/<name>.so`. This `.so` file is the mod, and the only thing the player installs.
 
 ### Make a new mod
 
