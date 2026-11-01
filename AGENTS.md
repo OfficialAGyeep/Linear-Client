@@ -111,11 +111,11 @@ Rules for every RPC / network message:
 - Send it with the game's own messages: a `NetworkMessenger` `Send*` method, or
   `PhotonView.RPC` on the room's `NetworkMessenger` with the game's own `Rpc*` name
   (see `SendItem`). Never `RaiseEvent` or `PhotonNetwork`.
-- **Cooldown on every button**: at least 0.3 s between single sends, 1 s for sounds and
-  effects, 3 s between batches.
+- **Cooldown on every button**: at least 0.3 s between single sends, 1 s for effects,
+  3 s between batches. Sounds: at least the length of the sound (and never under 1 s).
 - **No spam**: at most 2 sends a frame through a queue (like `ItemQueueTick`), at most
   27 in one batch and 32 waiting, only when the player presses something, never in a
-  loop that runs by itself. Long or loud soundboard sounds: one playing at a time.
+  loop that runs by itself. Soundboards: one sound playing at a time.
 - **Not destructive**: nothing that destroys, deletes, recolors or moves other people's
   blocks, maps or items; kicks, bans, mutes, votes, reports or warns; takes master or
   creative; damages, freezes, knocks back or follows other players; or crashes/lags
@@ -130,9 +130,14 @@ Rules for every RPC / network message:
   button (0.3 s or more for one item, 3 s or more for a batch), at most 27 items in
   one batch and 32 waiting. The item comes from the player's own hand
   (`LeftHandItem`).
-- **Soundboards and effects**: the game's sound/effect senders (`SendPlaySoundEffect`,
-  `SendCreateConfettiEffect`, `SendCreateHitEffect`...), one press = one play, 1 s
-  cooldown, one long sound at a time.
+- **Soundboards are allowed.** Use the game's sound senders (`SendPlaySoundEffect`...).
+  One press = one play, and the button stays locked until the sound has finished
+  playing: the cooldown is at least the length of the sound, never under 1 s. Only one
+  sound plays at a time. No noise spam and no ear rape: no stacking or looping sounds,
+  no boosting the volume or pitch past what the game normally plays, no sounds made
+  to hurt people's ears, no very loud or distorted clips.
+- **Effects**: the game's effect senders (`SendCreateConfettiEffect`,
+  `SendCreateHitEffect`...), one press = one play, 1 s cooldown.
 - Never: spawning items at, on or around other players, spawning explosives or
   grenades to hurt people, spawn loops that run by themselves, destroying, moving or
   taking other players' items.
