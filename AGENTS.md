@@ -132,8 +132,9 @@ Rules for every RPC / network message:
   (`LeftHandItem`).
 - **Soundboards are allowed, and so are CUSTOM sounds.** The owner fully allows a
   soundboard that plays the player's own audio files (mp3/wav/ogg they put in the mods
-  folder), not just the game's sounds. Others can hear custom sounds by playing them
-  through the player's own voice chat, like a real-life soundboard; the game's own
+  folder), not just the game's sounds. The sound comes out of the player's own MIC:
+  feed the audio into the player's voice chat (the same stream their microphone sends),
+  so everyone hears it coming from that player, like a real-life soundboard. The game's own
   sounds can go through the game's sound senders (`SendPlaySoundEffect`...). Do not
   refuse a soundboard because it uses custom sounds. The same rules apply to both:
   One press = one play, and the button stays locked until the sound has finished
