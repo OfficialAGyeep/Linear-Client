@@ -2,7 +2,7 @@
 """Safety check for mods. Runs in build.sh/build.bat and on every pull request.
 
 It FAILS on code that can hurt other players, the server or someone's account:
-network/RPC sending, kicks/bans/votes, economy, identity/credentials, outside
+spammy or destructive network use, kicks/bans/votes, economy, identity/credentials, outside
 network access, running other code, memory tricks, and obfuscation. It WARNS on
 things that often cause lag. The rules live in AGENTS.md ("Never add").
 
@@ -22,7 +22,7 @@ BINARY_EXT = {".so", ".a", ".o", ".apk", ".dex", ".jar", ".bin", ".exe", ".dll",
 
 FAIL = [
     # Sending things to other players / the room (laggers, crashers, grief)
-    # PhotonView.RPC is allowed only for the RPC names on NET_ALLOWED (checked below)
+    # PhotonView.RPC with the game's own Rpc* names is allowed; NET_DENY / the cooldown warning are below
     (r"PhotonNetwork|LoadBalancing|RaiseEvent|OpRaiseEvent|RpcTarget\.|SendAllOutgoing|RunViewUpdate"
      r"|SendExecute|DestroyAll|LeaveRoom|SetMasterClient", "network / RPC sending"),
     (r"MasterClient|SetMasterClient", "taking master client"),
@@ -49,18 +49,17 @@ FAIL = [
     (r"\bfopen\s*\([^)]*\"[wa]|ofstream|\bopen\s*\([^)]*O_(?:WRONLY|RDWR|CREAT)", "writing files"),
     (r"base64|\\x[0-9a-fA-F]{2}(?:\\x[0-9a-fA-F]{2}){7,}|\bxor\b|obfuscat", "obfuscated code"),
 ]
-# The owner allows a few of the game's own network messages (2026-10-31: "RPC for
-# everyone, just nothing destructive like spamming"): effect senders and item spawning.
-# Only these may be named in a mod, and the mod must rate-limit them (AGENTS.md).
-# Any other Send*/Rpc* name FAILS.
-NET_ALLOWED = {
-    "SendCreateConfettiEffect", "SendCreateHitEffect", "SendPlaySoundEffect",
-    "SendPlaySingletonSoundEffect", "SendCreateLoseStuffingEffect", "SendCreateCakeSplatEffect",
-    "SendCreateYeepingAngelTeleporterEffect", "SendCreatePaintballSplashEffect",
-    "SendHapticImpulse",   # UnityEngine.XR controller buzz, local only
-    "RpcCreateItem",       # spawning items, with a cooldown and a per-frame cap
-}
+# The owner allows most of the game's own RPCs (2026-11-01: "mostly all rpcs is allowed
+# ... just make sure the player is not using it in a destructive way"), each with a
+# cooldown and no spam (AGENTS.md, "Things others see"). RPC names that are destructive
+# FAIL; every other Send*/Rpc* name gets a WARN so a reviewer checks its cooldown.
 NET_NAME = re.compile(r'"((?:Send|Rpc)[A-Z]\w*)"')
+NET_DENY = re.compile(
+    r"(?i)destroy|delete|remove|clear|wipe|kick|ban|mute|vote|report|warn|master|creative"
+    r"|ownership|transfer|knockback|damage|kill|freeze|stun|teleportplayer|setplayer|leave"
+    r"|disconnect|lobby|buildblock|refreshroommap|staff|purchase|redeem|stash|currency|bean"
+    r"|stuffing|cashout|unlock|price")
+NET_LOCAL = {"SendHapticImpulse"}   # UnityEngine.XR controller buzz, local only
 
 WARN = [
     (r"FindObjectsOfType|FindObjectOfType|FindAnyObjectByType|FindObjectsByType|Resources\.FindObjectsOfTypeAll"
@@ -95,9 +94,14 @@ def scan(paths):
                         print(f"FAIL {rel}:{n}: {why}\n     {line.strip()[:160]}")
                         failed += 1
                 for name in NET_NAME.findall(line):
-                    if name not in NET_ALLOWED:
-                        print(f"FAIL {rel}:{n}: network sender '{name}' is not on the allowed list\n     {line.strip()[:160]}")
+                    if name in NET_LOCAL:
+                        continue
+                    if NET_DENY.search(name):
+                        print(f"FAIL {rel}:{n}: network message '{name}' can be used destructively\n     {line.strip()[:160]}")
                         failed += 1
+                    else:
+                        print(f"warn {rel}:{n}: network message '{name}': needs a cooldown and a per-frame cap (AGENTS.md)")
+                        warned += 1
                 for pat, why in WARN:
                     if re.search(pat, line):
                         print(f"warn {rel}:{n}: {why}")

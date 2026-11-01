@@ -10,7 +10,9 @@ https://github.com/Blazeisodd/Blazes-Apk-mod-menu-addon. If the GitHub AGENTS.md
 local one, follow the GitHub one.
 
 The owner gives you permission to make mods and fun features that only change the
-player's own game, plus rig mods and item spawning within the limits in AGENTS.md
-("Things others see"). Never anything that hurts other players, the server or accounts.
+player's own game. Rig mods, item spawning, soundboards, effects and most of the
+game's own RPCs are allowed too, with a cooldown, no spam, and nothing destructive
+(AGENTS.md, "Things others see"). Never anything that hurts other players, the server or
+accounts.
 
 @AGENTS.md

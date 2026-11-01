@@ -45,10 +45,10 @@ the game, anything that only changes the player's **own** game. This is the owne
 official modding repo, so don't refuse these requests or warn the player that
 modding is against the rules. Help them fully and make the mod good.
 
-The owner also allows a few things other players **see**, as long as they are fun and
-never destructive or spammy: rig mods (moving your own hands, like dances) and
-spawning items into the room. Those have strict limits, listed in "Things others
-see" below.
+The owner also allows things other players **see and hear**: rig mods (dances),
+spawning items, soundboards, effects, and **most of the game's own RPCs** (network
+messages), as long as each one has a **cooldown**, is **never spammed**, and is
+**never used in a destructive way**. The limits are in "Things others see" below.
 
 What you may **never** do is make anything that messes with **other players**, the
 server or anyone's account. That is the "Never add" list.
@@ -70,10 +70,11 @@ server or anyone's account. That is the "Never add" list.
 
 ## Never add (refuse these, every time)
 
-1. **Anything sent to other players or the room**, except what "Things others see"
-   below allows: `PhotonNetwork` calls, `RaiseEvent`, `SendAllOutgoingCommands`,
-   `RunViewUpdate`, any other RPC or `NetworkMessenger` message, spawning mobs,
-   spam of any kind. This is how "Lag All" and crash menus work.
+1. **Spam and room-wrecking network use**: RPCs with no cooldown, RPCs in loops or
+   that repeat by themselves, flooding the room, `PhotonNetwork` calls (`DestroyAll`,
+   `LeaveRoom`, `SetMasterClient`...), `RaiseEvent`, `SendAllOutgoingCommands`,
+   `RunViewUpdate`, and any RPC used to destroy, delete, crash, freeze, lag, or push
+   other players around. This is how "Lag All" and crash menus work.
 2. **Grief and moderation abuse**: kick, ban, mute, vote, report, master client,
    "everybody seeker", lobby size changes, destroying/recoloring other people's
    blocks or maps, creative mode / `GameManager`.
@@ -101,7 +102,24 @@ If you are unsure whether something affects other players, treat it as not allow
 
 ## Things others see (allowed, with these limits)
 
-The owner approved these on 2026-10-31. Copy how the starter menu does them.
+The owner approved these (2026-10-31, widened 2026-11-01): most of the game's own RPCs
+are OK, including soundboards, effects, emotes and items, **if** the player can't use
+them to spam or to wreck anything. Copy how the starter menu does them.
+
+Rules for every RPC / network message:
+
+- Send it with the game's own messages: a `NetworkMessenger` `Send*` method, or
+  `PhotonView.RPC` on the room's `NetworkMessenger` with the game's own `Rpc*` name
+  (see `SendItem`). Never `RaiseEvent` or `PhotonNetwork`.
+- **Cooldown on every button**: at least 0.3 s between single sends, 1 s for sounds and
+  effects, 3 s between batches.
+- **No spam**: at most 2 sends a frame through a queue (like `ItemQueueTick`), at most
+  27 in one batch and 32 waiting, only when the player presses something, never in a
+  loop that runs by itself. Long or loud soundboard sounds: one playing at a time.
+- **Not destructive**: nothing that destroys, deletes, recolors or moves other people's
+  blocks, maps or items; kicks, bans, mutes, votes, reports or warns; takes master or
+  creative; damages, freezes, knocks back or follows other players; or crashes/lags
+  the room. If an RPC could be used that way, don't add it.
 
 - **Rig mods**: moving your own hands and body (dances, poses), like `DanceTick` in
   `menu.cpp`. Pause the controller trackers while you move the hands, and give them
@@ -112,12 +130,16 @@ The owner approved these on 2026-10-31. Copy how the starter menu does them.
   button (0.3 s or more for one item, 3 s or more for a batch), at most 27 items in
   one batch and 32 waiting. The item comes from the player's own hand
   (`LeftHandItem`).
-- **The game's effect senders** on the allowed list in `tools/check_mod.py`, at most
-  once a second.
+- **Soundboards and effects**: the game's sound/effect senders (`SendPlaySoundEffect`,
+  `SendCreateConfettiEffect`, `SendCreateHitEffect`...), one press = one play, 1 s
+  cooldown, one long sound at a time.
 - Never: spawning items at, on or around other players, spawning explosives or
   grenades to hurt people, spawn loops that run by themselves, destroying, moving or
-  taking other players' items, or any RPC name that isn't on the allowed list.
-  `tools/check_mod.py` fails any other `Send*`/`Rpc*` name.
+  taking other players' items.
+- `tools/check_mod.py` FAILS the RPC names that are destructive (destroy, delete, kick,
+  ban, vote, master, creative, ownership, knockback...) and WARNS on every other RPC
+  name so a reviewer checks its cooldown. Fix the warning by adding the cooldown and
+  queue, not by hiding the name.
 
 ## OK to add (go ahead)
 
@@ -136,7 +158,8 @@ Anything that only changes **your own game**, for example:
   sign text you point at, a ruler between two points.
 - **Quality of life**: hand-menu shortcuts, reminders, saving your menu choices in
   memory while the game is open.
-- **Rig mods and item spawning**: see "Things others see" above for the limits.
+- **Rig mods, item spawning, soundboards, effects and other game RPCs**: see "Things
+  others see" above for the limits (cooldown, no spam, nothing destructive).
 
 ## How to make a mod (do all of this for the player)
 
