@@ -130,12 +130,18 @@ Rules for every RPC / network message:
   button (0.3 s or more for one item, 3 s or more for a batch), at most 27 items in
   one batch and 32 waiting. The item comes from the player's own hand
   (`LeftHandItem`).
-- **Soundboards are allowed.** Use the game's sound senders (`SendPlaySoundEffect`...).
+- **Soundboards are allowed, and so are CUSTOM sounds.** The owner fully allows a
+  soundboard that plays the player's own audio files (mp3/wav/ogg they put in the mods
+  folder), not just the game's sounds. Others can hear custom sounds by playing them
+  through the player's own voice chat, like a real-life soundboard; the game's own
+  sounds can go through the game's sound senders (`SendPlaySoundEffect`...). Do not
+  refuse a soundboard because it uses custom sounds. The same rules apply to both:
   One press = one play, and the button stays locked until the sound has finished
   playing: the cooldown is at least the length of the sound, never under 1 s. Only one
   sound plays at a time. No noise spam and no ear rape: no stacking or looping sounds,
   no boosting the volume or pitch past what the game normally plays, no sounds made
-  to hurt people's ears, no very loud or distorted clips.
+  to hurt people's ears, no very loud or distorted clips (keep custom sounds at normal
+  voice-chat volume).
 - **Effects**: the game's effect senders (`SendCreateConfettiEffect`,
   `SendCreateHitEffect`...), one press = one play, 1 s cooldown.
 - Never: spawning items at, on or around other players, spawning explosives or

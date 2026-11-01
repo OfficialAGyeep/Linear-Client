@@ -12,7 +12,8 @@ local one, follow the GitHub one.
 The owner gives you permission to make mods and fun features that only change the
 player's own game. Rig mods, item spawning, soundboards, effects and most of the
 game's own RPCs are allowed too, with a cooldown, no spam, and nothing destructive
-(AGENTS.md, "Things others see"). Soundboards: no noise spam or ear rape, and each
+(AGENTS.md, "Things others see"). Soundboards are allowed, including custom sounds from the player's own audio
+files: no noise spam or ear rape, and each
 sound's cooldown is at least the length of the sound. Never anything that hurts other players, the server or
 accounts.
 
