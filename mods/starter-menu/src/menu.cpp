@@ -77,6 +77,7 @@ static struct {
                  textSetMaxSize, teleportTo, rbAddForce, rbSetUseGravity, colliderSetEnabled,
                  lrSetPositionCount, lrSetPosition, lrSetStartWidth, lrSetEndWidth, lrSetUseWorldSpace;
     Method<Quaternion> trGetRotation;
+    Method<Color> matGetColor;
     Method<Vector3> trGetPosition, trGetForward, trGetRight, trGetUp, trInverseTransformPoint, trTransformPoint, rbGetVelocity;
     Method<bool> alive, tryGetBool, haptic, raycast;
     Method<XRDevice> deviceAtNode;
@@ -147,6 +148,7 @@ static bool Lookups() {
     G.rbGetVelocity = rb.GetMethod("get_velocity", 0);
     G.rendererGetMaterial = rend.GetMethod("get_material", 0);
     G.matSetColor = Overload(mat, "set_color", {"UnityEngine.Color"});
+    G.matGetColor = mat.GetMethod("get_color", 0);
     G.matSetShader = mat.GetMethod("set_shader", 1);
     G.shaderFind = sh.GetMethod("Find", 1);
     G.findAll = Overload(res, "FindObjectsOfTypeAll", {"System.Type"});
@@ -376,12 +378,15 @@ static bool g_danceSel[kDances];
 static int g_dance = -1;            // the picked dance, -1 = none
 static bool f_fly, f_fastFly, f_platforms, f_lowGravity, f_rainbow, f_fps, f_clock, f_rightHand,
             f_notify = true;
-static bool f_airBrake, f_jetpack, f_speed, f_pos, f_noFog, f_draw;      // Linear Client additions
+static bool f_airBrake, f_jetpack, f_speed, f_pos, f_noFog, f_draw, f_longArms, f_hud;  // Linear Client additions
 static Ref g_player, g_rigidbody, g_leftHand, g_rightHand, g_head;
 static Vector3 g_spot;
 static bool g_haveSpot = false;
 
 static void Notify(const char *fmt, ...);
+static void NextSkinColor();
+static void NextEyeColor();
+static void QuitGame();
 static void NextDrawColor();
 static void NextDrawSize();
 static void UndoDrawing();
@@ -440,6 +445,7 @@ static Item g_items[] = {
     {MOVEMENT, "Low Gravity", TOGGLE, MAIN, &f_lowGravity},
     {MOVEMENT, "Air Brake", TOGGLE, MAIN, &f_airBrake},
     {MOVEMENT, "Jetpack", TOGGLE, MAIN, &f_jetpack},
+    {MOVEMENT, "Long Arms", TOGGLE, MAIN, &f_longArms},
     {MOVEMENT, "Save Spot", ACTION, MAIN, nullptr, SaveSpot},
     {MOVEMENT, "Go To Spot", ACTION, MAIN, nullptr, GoToSpot},
 
@@ -453,6 +459,8 @@ static Item g_items[] = {
     {RIG, "Jumping Jacks", TOGGLE, MAIN, &g_danceSel[5], DancePicked},
     {RIG, "Spaz", TOGGLE, MAIN, &g_danceSel[6], DancePicked},
     {RIG, "Beyblade", TOGGLE, MAIN, &g_danceSel[7], DancePicked},
+    {RIG, "Skin Color", ACTION, MAIN, nullptr, NextSkinColor},
+    {RIG, "Eye Color", ACTION, MAIN, nullptr, NextEyeColor},
 
     {ITEMS, "Exit Items", OPEN, MAIN},
     {ITEMS, "Spawn Item Gun", TOGGLE, MAIN, &f_itemGun},
@@ -478,10 +486,12 @@ static Item g_items[] = {
     {SETTINGS, "Rainbow Menu", TOGGLE, MAIN, &f_rainbow},
     {SETTINGS, "Show FPS", TOGGLE, MAIN, &f_fps},
     {SETTINGS, "Show Clock", TOGGLE, MAIN, &f_clock},
+    {SETTINGS, "FPS/Clock On Screen", TOGGLE, MAIN, &f_hud},
     {SETTINGS, "Notifications", TOGGLE, MAIN, &f_notify},
     {SETTINGS, "Speedometer", TOGGLE, MAIN, &f_speed},
     {SETTINGS, "Show Position", TOGGLE, MAIN, &f_pos},
     {SETTINGS, "No Fog", TOGGLE, MAIN, &f_noFog},
+    {SETTINGS, "Leave Yeeps", ACTION, MAIN, nullptr, QuitGame},
     {SETTINGS, "Turn Everything Off", ACTION, MAIN, nullptr, AllOff},
 };
 static constexpr int kItems = sizeof(g_items) / sizeof(g_items[0]);
@@ -514,15 +524,18 @@ static const struct { const char *label, *tip; } kTips[] = {
     {"Clear Objects", "Removes everything you drew or placed."},
     {"Air Brake", "Hold X to stop dead in the air."},
     {"Jetpack", "Hold B to rise. Not with Right Hand Menu on."},
+    {"Long Arms", "Stretches your reach. Only you see it stretched."},
     {"Speedometer", "Your speed in the title."},
     {"Show Position", "Your x, y, z in the title."},
     {"No Fog", "Turns the fog off for you."},
+    {"Leave Yeeps", "Quits the game."},
     {"Save Spot", "Remembers where you are."},
     {"Go To Spot", "Teleports you to your saved spot."},
     {"Change Menu Theme", "Midnight, Orange, Blue, Green, Purple, Dark."},
     {"Rainbow Menu", "The menu cycles through colors."},
     {"Show FPS", "Frames per second in the title."},
     {"Show Clock", "The time in the title."},
+    {"FPS/Clock On Screen", "Moves FPS/Clock to a small on-screen HUD."},
     {"Rig Mods", "Pick a dance, then hold left trigger. Everyone sees it."},
     {"Items", "Spawn copies of the item in your left hand. Everyone sees them."},
     {"Spawn Item Gun", "Hold an item in your left hand. Right grip aims, trigger spawns it."},
@@ -537,6 +550,10 @@ static const struct { const char *label, *tip; } kTips[] = {
     {"Jumping Jacks", "Arms go up and down at your sides. Hold left trigger."},
     {"Spaz", "Hands shake all over the place. Hold left trigger."},
     {"Beyblade", "Hands spin fast around your waist. Hold left trigger."},
+    {"Skin Color", "Cycles your own skin color. Only you see it."},
+    {"Eye Color", "Cycles your own eye color, if found separately from skin."},
+    {"Skin Color", "Cycles your own skin color. Only you see it."},
+    {"Eye Color", "Cycles your own eye color, if found separately from skin."},
     {"Change Pointer Position", "Moves the ball on your finger."},
     {"Iron Man Speed", "Changes how strong Iron Man is."},
     {"Right Hand Menu", "Hold B, menu on your right hand."},
@@ -570,6 +587,7 @@ static const Theme &T() { return kThemes[g_theme]; }
 static constexpr int kRows = 8;                                   // buttons per page
 static const float kBoardW = 0.30f, kBoardH = 0.3825f, kBtnW = 0.27f, kBtnH = 0.0306f;
 static const float kBoardR = 0.035f;                                 // rounded corners of the board
+static RRect g_backPlate, g_backBadge, g_backBar[2];
 static const float kTitleY = 0.235f, kSideX = 0.2f, kSideW = 0.06f, kSideH = 0.344f;
 static float RowY(int r) { return 0.13f - r * 0.04f; }
 
@@ -704,6 +722,21 @@ static void BuildMenu() {
         snprintf(ver, sizeof ver, "Linear Client %s", ym::api()->gameVersion);
         Label(ct, ver, Vector3(0, -kBoardH / 2 + 0.012f, 0), kBoardW, 0.02f, 11, nullptr);
     }
+    // The back of the board: a vector version of the Linear logo (rounded square,
+    // a blue badge reading "Linear", and two slanted bars), since the mod can't load
+    // an image file into a texture, only build shapes.
+    RRBuild(g_backPlate, bt, Color(0.04f, 0.10f, 0.12f, 1), Vector3(0, 0, -0.016f), kBoardW, kBoardH, 0.006f, kBoardR);
+    RRBuild(g_backBadge, bt, Color(0.12f, 0.12f, 0.95f, 1), Vector3(0.035f, 0, -0.019f), kBoardW * 0.62f, kBoardH * 0.26f, 0.004f, kBoardH * 0.26f / 2);
+    auto RotZ = [](float deg) { float r = deg * 0.0174533f * 0.5f; return Quaternion(0, 0, sinf(r), cosf(r)); };
+    for (int i = 0; i < 2; i++) {
+        RRBuild(g_backBar[i], bt, i == 0 ? Color(0.20f, 0.18f, 0.55f, 1) : Color(0.30f, 0.26f, 0.85f, 1),
+                Vector3(-kBoardW * 0.34f - i * 0.028f, -0.01f + i * 0.045f, -0.019f), 0.028f, kBoardH * 0.34f, 0.004f, 0.014f);
+        G.trSetLocalRotation[Tr(g_backBar[i].root.get())](RotZ(18.0f));
+    }
+    if (Il2CppObject *bc = Canvas(bt, Vector3(0.035f, 0, -0.021f), kBoardW, kBoardH)) {
+        Label(Tr(bc), "Linear", Vector3(0, 0, 0), kBoardW * 0.55f, kBoardH * 0.22f, 30, nullptr);
+    }
+
     // Pointer: a small ball on the index finger of the other hand
     if (Il2CppObject *p = Prim(0, T().bgB, false)) {
         G.trSetLocalScale[Tr(p)](Vector3(0.01f, 0.01f, 0.01f));
@@ -785,8 +818,8 @@ static void UpdateTitle() {
         n += snprintf(buf + n, sizeof buf - n, "<b><color=#%02X%02X%02X>%c</color></b>", Hex(c.r), Hex(c.g), Hex(c.b), word[i]);
     }
     n += snprintf(buf + n, sizeof buf - n, " <color=grey>[</color><color=white>%d</color><color=grey>]</color>", g_page + 1);
-    if (f_fps) n += snprintf(buf + n, sizeof buf - n, "<size=16>  %d fps</size>", (int)(g_fps + 0.5f));
-    if (f_clock) {
+    if (f_fps && !f_hud) n += snprintf(buf + n, sizeof buf - n, "<size=16>  %d fps</size>", (int)(g_fps + 0.5f));
+    if (f_clock && !f_hud) {
         time_t now = time(nullptr);
         struct tm lt;
         localtime_r(&now, &lt);
@@ -1507,6 +1540,15 @@ static Gauntlet g_gaunt[2];                      // 0 = left, 1 = right
 // Which side of the hand (local x) the palm is on. Iron Man pushes you the other way.
 // If the glove or flames show up on the wrong side, flip the signs here.
 static const float kPalmSide[2] = {1.0f, -1.0f};
+// The left and right hand bones mirror each other, so a plate placed the same way on
+// both ends up flipped on one side. A spin around local Z (forward) only fixed the
+// left/right mirroring, not the up/down flip reported in testing, so this now spins
+// the left hand 180 degrees around local X instead, which swaps up/down and
+// front/back while leaving left/right alone. If it's STILL wrong, the quaternions to
+// try by hand are: X spin Quaternion(1,0,0,0), Y spin Quaternion(0,1,0,0), Z spin
+// Quaternion(0,0,1,0) (identity is Quaternion(0,0,0,1)); swap whichever looks right
+// into index 0 below.
+static const Quaternion kGauntletRot[2] = {Quaternion(1, 0, 0, 0), Quaternion(0, 0, 0, 1)};
 static double g_nextHaptic = 0;
 
 static void GauntletKill() {
@@ -1533,6 +1575,7 @@ static void GauntletBuild(int h, Il2CppObject *hand) {
         Il2CppObject *t = Tr(o);
         G.trSetParent[t](hand, false);
         G.trSetLocalPosition[t](pos);
+        G.trSetLocalRotation[t](kGauntletRot[h]);
         G.trSetLocalScale[t](scale);
     };
     place(plate, Vector3(-s * 0.045f, 0.0f, 0.04f), Vector3(0.02f, 0.075f, 0.11f));
@@ -1721,6 +1764,109 @@ static void PlaceShape(int type) {
 static void PlaceCube() { PlaceShape(3); }
 static void PlaceSphere() { PlaceShape(0); }
 
+// ---- Skin Color and Eye Color (local only) --------------------------------------------
+// There's no name lookup available here to find "the eye renderer" by name, so this
+// grabs every Renderer under your own rig the same way Noclip finds every collider,
+// and recolors all of them for Skin Color. Eye Color instead recolors just ONE of
+// them, picked by kEyeMatSlot below, as a best guess at which slot the eyes are. If it
+// tints the wrong part of you, change kEyeMatSlot to another small number and rebuild;
+// there's no way to know the right one without testing it in the game.
+struct BodyMat { Ref mat; Color orig; bool hasOrig = false; };
+static std::vector<BodyMat> g_bodyMats;
+static bool g_bodyMatsBuilt = false;
+static int g_skinIdx = 0, g_eyeIdx = 0;                // 0 = default/off
+static constexpr int kEyeMatSlot = 1;                  // which renderer is probably the eyes; see above
+static const struct { const char *name; Color c; } kBodyColors[] = {
+    {"Default", Color(1, 1, 1, 1)}, {"Red", Color(0.85f, 0.10f, 0.10f, 1)}, {"Orange", Color(1.0f, 0.50f, 0.0f, 1)},
+    {"Yellow", Color(1.0f, 0.85f, 0.10f, 1)}, {"Green", Color(0.15f, 0.80f, 0.25f, 1)}, {"Cyan", Color(0.10f, 0.85f, 0.95f, 1)},
+    {"Blue", Color(0.15f, 0.30f, 1.0f, 1)}, {"Purple", Color(0.60f, 0.20f, 0.95f, 1)}, {"Black", Color(0.05f, 0.05f, 0.05f, 1)}};
+static constexpr int kBodyColorCount = sizeof(kBodyColors) / sizeof(kBodyColors[0]);
+
+static void CollectBodyMats() {
+    g_bodyMats.clear();
+    g_bodyMatsBuilt = true;
+    Il2CppObject *player = g_player.get();
+    if (!player || !G.bodyCollider.IsValid() || !G.getComponentsInChildren.IsValid()) return;
+    Il2CppObject *body = G.bodyCollider[player]();
+    if (!body) return;
+    Il2CppObject *rig = G.compGameObject[G.trGetRoot[G.compTransform[body]()]()]();
+    if (!rig) return;
+    auto *arr = (uint8_t *)G.getComponentsInChildren[rig]((Il2CppObject *)G.tRenderer, false);
+    size_t n = arr ? *(uintptr_t *)(arr + 0x18) : 0;
+    for (size_t i = 0; i < n && g_bodyMats.size() < 24; i++) {
+        Il2CppObject *r = ((Il2CppObject **)(arr + 0x20))[i];
+        Il2CppObject *m = r && G.rendererGetMaterial.IsValid() ? G.rendererGetMaterial[r]() : nullptr;
+        if (!m) continue;
+        BodyMat bm;
+        bm.mat.set(m);
+        if (G.matGetColor.IsValid()) { bm.orig = G.matGetColor[m](); bm.hasOrig = true; }
+        g_bodyMats.push_back(bm);
+    }
+}
+
+// Reapplied every frame: the game may rebuild materials on its own, so a one-time set
+// wouldn't stick.
+static void SkinEyeTick() {
+    if (!g_player.get()) return;
+    if (!g_bodyMatsBuilt) CollectBodyMats();
+    if (g_bodyMats.empty()) return;
+    for (size_t i = 0; i < g_bodyMats.size(); i++) {
+        Il2CppObject *m = g_bodyMats[i].mat.get();
+        if (!Alive(m)) continue;
+        if ((int)i == kEyeMatSlot && g_eyeIdx > 0) { G.matSetColor[m](kBodyColors[g_eyeIdx].c); continue; }
+        if (g_skinIdx > 0) { G.matSetColor[m](kBodyColors[g_skinIdx].c); continue; }
+        if (g_bodyMats[i].hasOrig) G.matSetColor[m](g_bodyMats[i].orig);   // back to default
+    }
+}
+static void NextSkinColor() { g_skinIdx = (g_skinIdx + 1) % kBodyColorCount; Notify("Skin: %s", kBodyColors[g_skinIdx].name); }
+static void NextEyeColor() { g_eyeIdx = (g_eyeIdx + 1) % kBodyColorCount; Notify("Eyes: %s", kBodyColors[g_eyeIdx].name); }
+
+// ---- FPS/Clock on-screen HUD (local only) ----------------------------------------------
+// A small label parented to your head, in the corner of view, shown whenever the menu
+// is closed too. "Show FPS"/"Show Clock" still choose what it displays; this only
+// chooses where: the HUD when on, the menu title when off.
+static Ref g_hudGo, g_hudText;
+static double g_nextHud = 0;
+static void HudTick() {
+    Il2CppObject *head = g_head.get();
+    bool want = f_hud && (f_fps || f_clock) && head;
+    if (!want) { Kill(g_hudGo); g_hudText.clear(); return; }
+    if (!Alive(g_hudGo.get())) {
+        if (Il2CppObject *canvas = Canvas(head, Vector3(0.11f, 0.08f, 0.35f), 0.12f, 0.03f)) {
+            G.trSetLocalRotation[Tr(canvas)](Quaternion(0, 0, 0, 1));     // rides along with your head
+            Label(Tr(canvas), "", Vector3(0, 0, 0), 0.12f, 0.03f, 14, &g_hudText);
+            g_hudGo.set(canvas);
+        }
+        g_nextHud = 0;
+    }
+    if (g_time < g_nextHud) return;
+    g_nextHud = g_time + 0.1;
+    char buf[96];
+    int n = 0;
+    if (f_fps) n += snprintf(buf + n, sizeof buf - n, "%d fps", (int)(g_fps + 0.5f));
+    if (f_clock) {
+        time_t now = time(nullptr);
+        struct tm lt;
+        localtime_r(&now, &lt);
+        n += snprintf(buf + n, sizeof buf - n, "%s%d:%02d", n ? "  " : "", lt.tm_hour % 12 ? lt.tm_hour % 12 : 12, lt.tm_min);
+    }
+    SetText(g_hudText, buf);
+}
+
+// ---- Leave Yeeps: quits the app -------------------------------------------------------
+static void QuitGame() {
+    static Method<void> quit;
+    static bool looked = false;
+    if (!looked) {
+        looked = true;
+        Class app("UnityEngine", "Application");
+        if (app.IsValid()) quit = app.GetMethod("Quit", 0);
+    }
+    if (quit.IsValid()) { ym::log("linear-client: Leave Yeeps pressed"); quit(); }
+    else Notify("Can't quit from here");
+}
+
+
 // ---- Linear Client additions (they only change your own game) ----------------
 
 // Air Brake: hold X to stop dead. Iron Man uses X and A together, so A wins.
@@ -1742,6 +1888,22 @@ static void JetpackTick(const Buttons &in, float dt) {
 // No Fog: RenderSettings is global, so the old value is kept and put back when you
 // switch it off. Checked every frame so it also holds after the scene changes.
 static bool g_fogApplied = false, g_fogOld = true;
+// Long Arms: stretches each hand out from your shoulder, toward where your
+// controller actually points, every frame. Nothing is sent, so other players still
+// see your normal-length arms.
+static constexpr float kArmScale = 3.0f;
+static void LongArmsTick() {
+    Il2CppObject *head = g_head.get(), *lh = g_leftHand.get(), *rh = g_rightHand.get();
+    if (!f_longArms || !head || !lh || !rh) return;
+    Vector3 hp = G.trGetPosition[head](), f = Flat(G.trGetForward[head]()), up(0, 1, 0);
+    Vector3 r = Cross(up, f);
+    Vector3 shoulder = hp + up * -0.25f;
+    Vector3 shL = shoulder - r * 0.18f, shR = shoulder + r * 0.18f;
+    Vector3 pl = G.trGetPosition[lh](), pr = G.trGetPosition[rh]();
+    G.trSetPosition[lh](shL + (pl - shL) * kArmScale);
+    G.trSetPosition[rh](shR + (pr - shR) * kArmScale);
+}
+
 static void FogTick() {
     static Method<void> setFog;
     static Method<bool> getFog;
@@ -1766,9 +1928,12 @@ static void FogTick() {
 static void OnRoomChange() {
     // The old room's objects are gone (or about to be): forget them, build again.
     for (int r = 0; r < kRows; r++) { RRClear(g_rowCube[r]); g_rowLabel[r].clear(); g_rowText[r].clear(); }
-    for (RRect *rr : {&g_bg, &g_outline, &g_titleBar, &g_prev, &g_next}) RRClear(*rr);
+    for (RRect *rr : {&g_bg, &g_outline, &g_titleBar, &g_prev, &g_next, &g_backPlate, &g_backBadge, &g_backBar[0], &g_backBar[1]}) RRClear(*rr);
     for (Ref *r : {&g_board, &g_title, &g_notifyText, &g_tipText}) r->clear();
-    for (Ref *r : {&g_menu, &g_pointer, &g_notifyGo, &g_leftPlatform, &g_rightPlatform, &g_gunBall, &g_gunLineGo}) Kill(*r);
+    for (Ref *r : {&g_menu, &g_pointer, &g_notifyGo, &g_leftPlatform, &g_rightPlatform, &g_gunBall, &g_gunLineGo, &g_hudGo}) Kill(*r);
+    g_hudText.clear();
+    g_bodyMats.clear();
+    g_bodyMatsBuilt = false;
     PauseTrackers(false);
     GauntletKill();
     ObjectsReset();
@@ -1828,6 +1993,9 @@ static void OnUpdate(float dt) {
     NoclipTick(in);
     AirBrakeTick(in);
     JetpackTick(in, dt);
+    LongArmsTick();
+    SkinEyeTick();
+    HudTick();
     FogTick();
     TeleportGunTick(in);
     try { SpawnOnHandTick(in); ItemQueueTick(); }
